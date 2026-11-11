@@ -36,10 +36,13 @@ function fuselagePlan(def) {
   if (def.id === 'c172s') return { stations: STATIONS_172, glass: glass172, high, crisp: [-1.06, 2.25], eye: [-0.26, 0.66, 0.16] };
   const B = def.body.stations.slice().sort((a, b) => b[0] - a[0]);        // nose to tail
   const deep = B.reduce((m, st) => (st[2] > m[2] ? st : m), B[0]);
-  const hub = def.prop ? -def.prop.hub[1] : -def.htail.z;
   const wingY = -def.wing.z;
   const cabBottom = high ? wingY - 0.06 - deep[2] : wingY - 0.14;
-  const cabC = cabBottom + deep[2] / 2, tailC = -def.htail.z - 0.02;
+  // a T-tail (tailplane on top of the fin, as on most gliders): the boom ends at the fin's root, not up at the tailplane
+  const tTail = -def.htail.z > def.fin.h0 + 0.5 * (def.fin.h1 - def.fin.h0);
+  const cabC = cabBottom + deep[2] / 2, tailC = tTail ? def.fin.h0 + 0.04 : -def.htail.z - 0.02;
+  // the nose: on the propeller hub, or with no propeller on the cabin's centreline
+  const hub = def.prop ? -def.prop.hub[1] : cabC - 0.04;
   const xN = B[0][0] + B[0][1] / 2, xT = Math.min(B[B.length - 1][0] - B[B.length - 1][1] / 2, def.fin.xLE - def.fin.chord[0] * 0.9);
   const row = (x, depth, width) => {
     const fwd = x >= deep[0];
