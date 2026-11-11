@@ -48,7 +48,7 @@ sunLight.shadow.mapSize.set(2048, 2048);
 Object.assign(sunLight.shadow.camera, { left: -7, right: 7, top: 7, bottom: -7, near: 1, far: 60 });
 sunLight.shadow.camera.updateProjectionMatrix();
 sunLight.shadow.bias = -0.0006; sunLight.shadow.normalBias = 0.025;
-const bounce = new THREE.Color();
+const bounce = new THREE.Color(), glassSky = new THREE.Color(), glassGlint = new THREE.Color();
 const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
 // daylight bouncing around the cabin: without it the interior would be lit by the sky's zenith alone
 const cabin = new THREE.PointLight(0xffffff, 0, 3.2, 1.2);
@@ -583,7 +583,13 @@ function frame(now) {
   const w = air.out;
   tmp.set(w.e - fm.vel[1], -(S.weather.snow ? 1.4 : 7.5) + fm.vel[2], -(w.n - fm.vel[0]));
   const wet = cam.u < low.top ? Math.min(1, S.weather.precip / 5) : 0;
-  precip.update(S.paused ? 0 : dt, tmp, wet, S.weather.snow, atm.ambient);
+  precip.update(S.paused ? 0 : dt, tmp, wet, S.weather.snow, atm.ambient, S.view === 'cockpit' ? 1.6 : 0);
+  // and the water it leaves on the glass
+  if (aircraft.rainGlass) {
+    glassSky.copy(atm.ambient).multiplyScalar(1.3);
+    glassGlint.copy(atm.sunLight).multiplyScalar(0.8 * shade).add(bounce.copy(atm.ambient).multiplyScalar(2));
+    aircraft.rainGlass.update(S.paused ? 0 : dt, S.weather.snow ? 0 : wet, o.ias, glassSky, glassGlint);
+  }
 
   // aircraft, panel, lights
   aircraft.update(o, c, flying ? dt : 0, now / 1000, atm.night, illum, fm.gearPos);

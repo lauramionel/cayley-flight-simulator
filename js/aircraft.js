@@ -4,6 +4,7 @@
 // Local axes: +X right, +Y up, -Z nose. Origin at the centre of gravity.
 import * as THREE from '../vendor/three.module.js';
 import C172S from './aircraft/c172s.js';
+import { GlassRain } from './glass-rain.js';
 
 const D2R = Math.PI / 180;
 export const PROP_Y = 0.10;
@@ -240,7 +241,8 @@ export function buildAircraft(def = C172S) {
   for (const g of [fus.paint, fus.accent]) { const m = new THREE.Mesh(g, trim); m.receiveShadow = true; lining.add(m); }
   skin.castShadow = stripe.castShadow = true; skin.receiveShadow = stripe.receiveShadow = true;
   glass.renderOrder = 10;
-  group.add(skin, stripe, lining, glass);
+  const rainGlass = new GlassRain(fus.glass);
+  group.add(skin, stripe, lining, glass, rainGlass.mesh);
 
   // ---- wing, from the same planform, twist and dihedral the lifting line uses
   const W = def.wing, half = W.span / 2;
@@ -387,7 +389,7 @@ export function buildAircraft(def = C172S) {
 
   let spin = 0;
   return {
-    group, parts, lights, glass, lining, exterior: [skin, stripe], eye: new THREE.Vector3(...plan.eye),
+    group, parts, lights, glass, rainGlass, lining, exterior: [skin, stripe], eye: new THREE.Vector3(...plan.eye),
     // o: flight model outputs; ctl: controls; night 0..1; light: how brightly the scene is lit
     update(o, ctl, dt, time, night, light = 1, gearPos = 1) {
       if (parts.prop) {

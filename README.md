@@ -159,8 +159,12 @@ wind meets the real terrain slope.
 where it really is for the date, time and place. One single-scattering
 atmosphere drives the sky dome, the haze over the terrain and the light on
 the clouds. Two raymarched cloud layers and a cirrus sheet; their coverage
-map also casts the cloud shadows on the ground. Rain and snow. Night, with
-stars, town lights and lit instruments.
+map also casts the cloud shadows on the ground. Rain and snow fall outside
+the aircraft, never inside the cabin. Rain lands on the windscreen and
+windows (`js/glass-rain.js`): it sits in beads while the aircraft is slow,
+runs up the windscreen and back along the side windows once the airflow can
+push it, and dries off after you leave the rain. Night, with stars, town
+lights and lit instruments.
 
 **Cockpit** (`js/cockpit.js`). The inside of the same aircraft model.
 Airspeed, attitude, altimeter (three needles, Kollsman window), turn

@@ -57,17 +57,18 @@ export class Precipitation {
     geom.setAttribute('end', new THREE.BufferAttribute(end, 1));
     this.uniforms = {
       uOffset: { value: new THREE.Vector3() }, uStreak: { value: new THREE.Vector3(0, -0.3, 0) },
-      uAmount: { value: 0 }, uColor: { value: new THREE.Color(0.6, 0.65, 0.7) }, uBox: { value: 26 },
+      uAmount: { value: 0 }, uColor: { value: new THREE.Color(0.6, 0.65, 0.7) }, uBox: { value: 26 }, uNear: { value: 0 },
     };
     const mat = new THREE.ShaderMaterial({
-      uniforms: this.uniforms, transparent: true, depthWrite: false, depthTest: false,
+      uniforms: this.uniforms, transparent: true, depthWrite: false, depthTest: true,   // the aircraft hides the drops behind it
       vertexShader: /* glsl */`
-        attribute float end; uniform vec3 uOffset; uniform vec3 uStreak; uniform float uBox; uniform float uAmount;
+        attribute float end; uniform vec3 uOffset; uniform vec3 uStreak; uniform float uBox; uniform float uAmount; uniform float uNear;
         varying float vA;
         void main() {
           vec3 p = (fract(position + uOffset / uBox) - 0.5) * uBox;
           float keep = step(position.x * 0.37 + position.z * 0.63, uAmount);
-          vA = (1.0 - end * 0.7) * keep * smoothstep(uBox * 0.5, uBox * 0.3, length(p));
+          // none inside the cabin: from the cockpit the nearest drops fall beyond the glass
+          vA = (1.0 - end * 0.7) * keep * smoothstep(uBox * 0.5, uBox * 0.3, length(p)) * smoothstep(uNear, uNear + 0.5, length(p));
           p += uStreak * end;
           gl_Position = projectionMatrix * viewMatrix * vec4(cameraPosition + p, 1.0);
         }`,
@@ -79,8 +80,10 @@ export class Precipitation {
     this.lines.visible = false;
   }
   // rel: velocity of the drops relative to the camera, in scene axes (m/s)
-  update(dt, rel, amount, snow, light) {
+  // near: no drops closer than this to the eye (m), the cabin's reach in cockpit view
+  update(dt, rel, amount, snow, light, near = 0) {
     const u = this.uniforms;
+    u.uNear.value = near;
     this.lines.visible = amount > 0.01;
     if (!this.lines.visible) return;
     u.uOffset.value.addScaledVector(rel, dt);

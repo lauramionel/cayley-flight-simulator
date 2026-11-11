@@ -159,6 +159,19 @@ const SHOTS = [
     each: `sim.input.look.yaw = 2.2 - i * 0.006;`,
   },
   {
+    // a takeoff roll in rain, from the left seat: beads on the windscreen until the air is fast enough to push them
+    name: '10-wet-takeoff', frames: 96, caption: 'Live weather. Real cloud.', sub: 'Winds aloft, turbulence, rain on the glass. Fly into freezing cloud and ice builds on the wing',
+    setup: `await R.go({ plane: 'c172s', airport: 'LSGS', time: 'noon', wx: 'storm', start: 'runway' });
+      const dep = sim.S.dep; let yawI = 0, go = false;
+      R.hands((dt, fm, o, c) => { let h = dep.heading - o.heading; while (h > Math.PI) h -= 2 * Math.PI; while (h < -Math.PI) h += 2 * Math.PI; yawI += h * dt;
+        c.throttle = go ? 1 : 0; c.roll = 0; c.pitch = 0; c.yaw = R.cl(7 * h - 1.5 * fm.w[2] + 3 * yawI, -1, 1); fm.ctl.park = !go; });
+      sim.S.view = 'cockpit'; sim.input.look.pitch = 0.04; sim.input.zoom = -0.1;
+      await R.pre(24); go = true;
+      for (let k = 0; k < 400 && sim.fm.out.ias < 10.5; k++) sim.advance(1 / 30, 30);
+      await R.settle(3);`,
+    each: ``,
+  },
+  {
     name: '08-title', frames: 54, caption: 'Cayley', sub: 'A flight simulator in a browser tab. Built overnight with Fable 5.2', title: true,
     setup: `await R.go({ plane: 'dr400', airport: 'LSGS', time: 'dusk', wx: 'fair', start: 'air' });
       sim.ap.engage('alt'); await R.pre(8); sim.S.view = 'chase'; sim.input.look.yaw = 2.6; sim.input.look.pitch = -0.02; sim.input.zoom = -0.2; await R.settle(5);`,
