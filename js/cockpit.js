@@ -604,23 +604,58 @@ export function buildCockpit(def = null) {
   sw.position.set(-0.30, 0.185, PZ + 0.004);
   group.add(sw);
 
-  // yokes
-  const yokes = [];
-  for (const sx of [-0.26, 0.26]) {
-    const y = new THREE.Group();
-    y.position.set(sx, 0.105, PZ);
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.34, 12), new THREE.MeshStandardMaterial({ color: 0xb9bbbe, roughness: 0.3, metalness: 0.8 }));
-    shaft.rotation.x = Math.PI / 2; shaft.position.z = 0.1;
-    const wheel = new THREE.Group(); wheel.position.z = 0.27;
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.03, 0.03), plastic);
-    const gl = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.12, 0.034), plastic); gl.position.set(-0.125, 0.045, 0.006);
-    const gr = gl.clone(); gr.position.x = 0.125;
-    const centre = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.05, 0.035), plastic);
-    wheel.add(bar, gl, gr, centre);
-    y.add(shaft, wheel);
-    y.traverse((m) => { if (m.isMesh) m.castShadow = true; });
-    group.add(y);
-    yokes.push({ root: y, wheel });
+  // flight controls, the kind this aircraft really has (def.cockpit.controls):
+  //   yoke        a wheel on a column out of the panel, one per seat (Cessna, Piper Archer)
+  //   panelstick  a stick out of the panel, one per seat (Robin DR400)
+  //   sidestick   a grip on the side panel, outboard of each seat (Cirrus SR22)
+  //   stick       one stick from the floor between the knees, tandem seats (Cub, Extra 300, glider)
+  const kind = (def && def.cockpit && def.cockpit.controls) || 'yoke';
+  const steel = new THREE.MeshStandardMaterial({ color: 0xb9bbbe, roughness: 0.3, metalness: 0.8 });
+  const controls = [];
+  const shadows = (o) => o.traverse((m) => { if (m.isMesh) m.castShadow = true; });
+  for (const sx of kind === 'stick' ? [-0.26] : [-0.26, 0.26]) {
+    if (kind === 'yoke' || kind === 'panelstick') {
+      const y = new THREE.Group();
+      y.position.set(sx, kind === 'yoke' ? 0.105 : 0.085, PZ);
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.34, 12), steel);
+      shaft.rotation.x = Math.PI / 2; shaft.position.z = 0.1;
+      const wheel = new THREE.Group(); wheel.position.z = 0.27;
+      if (kind === 'yoke') {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.03, 0.03), plastic);
+        const gl = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.12, 0.034), plastic); gl.position.set(-0.125, 0.045, 0.006);
+        const gr = gl.clone(); gr.position.x = 0.125;
+        const centre = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.05, 0.035), plastic);
+        wheel.add(bar, gl, gr, centre);
+      } else {
+        const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.015, 0.11, 12), plastic);
+        grip.position.set(0, 0.05, 0.0); grip.rotation.x = -0.25;
+        const knuckle = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 8), plastic);
+        wheel.add(grip, knuckle);
+      }
+      y.add(shaft, wheel); shadows(y); group.add(y);
+      const roll = kind === 'yoke' ? 1.05 : 0.6;
+      controls.push((c) => { wheel.rotation.z = -c.roll * roll; y.position.z = PZ + c.pitch * 0.075; });
+    } else if (kind === 'stick') {
+      // pivots at the floor; pull back tips it aft, right roll tips it right
+      const p = new THREE.Group(); p.position.set(sx, -0.38, -0.14);
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.016, 0.46, 12), steel); rod.position.y = 0.23;
+      const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.017, 0.12, 12), plastic); grip.position.y = 0.50;
+      const boot = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.06, 16), plastic); boot.position.y = 0.03;
+      p.add(rod, grip, boot); shadows(p); group.add(p);
+      controls.push((c) => { p.rotation.set(c.pitch * 0.28, 0, -c.roll * 0.26); });
+    } else {
+      // a side-stick: a short grip on a console against the cabin wall, outboard of the seat
+      const side = Math.sign(sx);
+      const console_ = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.40), panelMat);
+      console_.position.set(sx + side * 0.29, -0.03, -0.22); console_.receiveShadow = true; group.add(console_);
+      const s = new THREE.Group(); s.position.set(sx + side * 0.27, 0.02, -0.26);
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.07, 10), steel); stem.position.y = 0.02;
+      const grip = new THREE.Group(); grip.position.y = 0.06;
+      const handle = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.10, 0.045), plastic); handle.position.y = 0.04; handle.rotation.x = -0.2;
+      const hat = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.02, 0.05), new THREE.MeshStandardMaterial({ color: 0x3a3b3d, roughness: 0.5 })); hat.position.set(0, 0.095, -0.005);
+      grip.add(handle, hat); s.add(stem, grip); shadows(s); group.add(s);
+      controls.push((c) => { s.position.z = -0.26 + c.pitch * 0.06; grip.rotation.z = -c.roll * 0.45; });
+    }
   }
   // throttle (black), mixture (red)
   const knob = (color, px) => {
@@ -674,7 +709,7 @@ export function buildCockpit(def = null) {
       const glow = 0.02 + (0.42 * night) / exposure;
       for (const m of mats) m.emissiveIntensity = glow;
       stackMat.emissiveIntensity = Math.min(0.5, 0.75 / exposure);
-      for (const y of yokes) { y.wheel.rotation.z = -c.roll * 1.05; y.root.position.z = PZ + c.pitch * 0.075; }
+      for (const f of controls) f(c);
       throttle.position.z = PZ + 0.10 - c.throttle * 0.10;
       mixture.position.z = PZ + 0.10 - c.mixture * 0.10;
       flapLever.position.y = 0.14 - o.flapPos * 0.08;

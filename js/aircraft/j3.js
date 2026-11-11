@@ -47,6 +47,7 @@ export default {
   htail: { xLE: -3.95, sweep: 0.30, z: -0.05, halfSpan: 1.45, chord: [1.05, 0.57], area: 2.35, incidence: -0.75, e: 0.85, slope: 0.90, clmax: 1.05, tau: 0.62 },
   fin: { xLE: -4.05, sweep: 0.25, h0: 0.10, h1: 1.35, chord: [1.00, 0.56], area: 0.978, a: 2.5, clmax: 1.1, tau: 0.78 },
   controls: { elevUp: 34, elevDown: 29, trim: 5.5, rudder: 30 },
+  cockpit: { controls: 'stick' },
   body: {
     stations: [[1.45, 0.5, 0.60, 0.60], [0.95, 0.5, 0.85, 0.66], [0.35, 0.7, 1.20, 0.68], [-0.35, 0.7, 1.25, 0.68], [-1.05, 0.7, 1.05, 0.64], [-1.90, 1.0, 0.75, 0.50], [-2.95, 1.1, 0.50, 0.32], [-4.10, 1.2, 0.32, 0.14]],
     munkYaw: 1.46, munkPitch: 0.50, cda: 0.60,
